@@ -2,6 +2,8 @@
 
 #include "IP.h"
 #include <stdlib.h>
+#include "b_cas_card.h"
+#include "b_cas_card_error_code.h"
 
 /*
 	AIT		Application Information Table
@@ -2141,7 +2143,162 @@ namespace MMT
 			}
 		}
 	};
+	
+	struct M2Message : public Message
+	{
 
+		M2Message(uint32_t cbPayload = 0) : Message(cbPayload) {
+		}
+
+		wchar_t LOGEMM_FILENAME[128] = L"EMM.mmt";
+		wchar_t LOGECM_FILENAME[128] = L"ECM.mmt";
+		FILE* flogEMM;
+		FILE* flogECM;
+
+
+		uint8_t signaling_data_byteECM;
+		uint8_t table_id;
+		uint16_t data_length = 0;
+		uint8_t* signaling_data_byte;
+
+		// Always assume the message information bitstream is complete
+		int Unpack(CBitstream& bs)
+		{
+			int iRet = Message::Unpack(bs);
+			if (iRet < 0)
+				return iRet;
+
+			uint64_t left_bits = 0;
+			bs.Tell(&left_bits);
+
+			if (left_bits < 24ULL)
+				return RET_CODE_BOX_TOO_SMALL;
+
+
+			uint8_t* section_field;
+			
+
+			section_field = new uint8_t[length];
+			bs.Peek(section_field, length);
+
+			table_id = bs.GetByte();
+			uint8_t section_syntax_indicator = bs.GetBits(1);
+			bs.GetBits(3);//just"1"
+			uint16_t section_length = bs.GetBits(12);
+			left_bits -= 24ULL;
+
+			
+			if (section_syntax_indicator)//M2 section message
+			{
+				uint16_t table_id_extension = bs.GetWord();
+				bs.GetBits(2);//just"1"
+				uint8_t version_number = bs.GetBits(5);
+				uint8_t current_next_indicator = bs.GetBits(1);
+				uint8_t section_number = bs.GetByte();
+				uint8_t last_section_number = bs.GetByte();
+
+				left_bits -= 40ULL;
+				data_length = section_length - 5;				
+				signaling_data_byte = new uint8_t[(int)data_length];
+
+				for (int i = 0; i < data_length; i++)
+				{
+					signaling_data_byte[i] = bs.GetByte();
+					left_bits -= 8ULL;
+				}
+				
+				//CRC data not included in Unpack(CBitstream& bs)
+				//uint32_t CRC_32 = bs.GetDWord(); 
+				//left_bits -= 32ULL;
+			}
+			else//M2 short section message
+			{
+				//MH-TOT
+				return RET_CODE_SUCCESS;
+			}
+			
+			if (table_id == 0x82)//ECM
+			{
+				signaling_data_byteECM =*signaling_data_byte;
+
+				flogECM = _wfopen(LOGECM_FILENAME, L"ab");
+				fwrite(section_field, 1, length, flogECM);
+				fwrite(signaling_data_byte, 1, data_length, flogECM);
+				fclose(flogECM);
+			}
+			else if (table_id == 0x84)//EMM, other EMM messase is 0x85
+			{
+				flogEMM = _wfopen(LOGEMM_FILENAME, L"ab");
+				fwrite(section_field, 1, length, flogEMM);
+				fclose(flogEMM);
+			}
+			delete[] section_field;
+			//delete[] signaling_data_byte;
+			//signaling_data_byte = nullptr;
+			
+			return RET_CODE_SUCCESS;
+		}
+
+		uint8_t* getECM()
+		{
+			return signaling_data_byte;
+		}
+
+		virtual void Print(FILE* fp = nullptr, int indent = 0)
+		{
+			Message::Print(fp, indent);
+		}
+	};
+	struct CAMessage : public Message
+	{
+
+		CAMessage(uint32_t cbPayload = 0) : Message(cbPayload) {
+		}
+
+		// Always assume the message information bitstream is complete
+		int Unpack(CBitstream& bs)
+		{
+			int iRet = Message::Unpack(bs);
+			if (iRet < 0)
+				return iRet;
+
+			uint64_t left_bits = 0;
+			bs.Tell(&left_bits);
+
+			if (left_bits < 48ULL)
+				return RET_CODE_BOX_TOO_SMALL;
+
+			uint8_t table_id = bs.GetByte();
+			uint8_t table_version = bs.GetByte();
+			uint16_t table_length = bs.GetWord();
+			uint16_t peek_desc_tag = (uint16_t)bs.PeekBits(16);
+			left_bits -= 48ULL;
+			MMTSIDescriptor* pDescr = nullptr;
+			switch (peek_desc_tag)
+			{
+			case 0x8004://Access control Descriptor*
+				pDescr = new UnimplMMTSIDescriptor();
+				//TODO ...
+				break;
+			case 0x8005://Scramble system Descriptor*
+				pDescr = new UnimplMMTSIDescriptor();
+				break;
+			case 0x8006://Message certification system Descriptor
+				pDescr = new UnimplMMTSIDescriptor();
+				break;
+			default:
+				pDescr = new UnimplMMTSIDescriptor();
+
+			}
+			delete pDescr;
+			return RET_CODE_SUCCESS;
+		}
+
+		virtual void Print(FILE* fp = nullptr, int indent = 0)
+		{
+			Message::Print(fp, indent);
+		}
+	};
 	// MPEG Media Transport Protocol packet
 	struct MMTPPacket
 	{
@@ -2455,6 +2612,10 @@ namespace MMT
 			std::vector<uint8_t>
 								payload;
 
+			uint8_t* signaling_data_byte;
+			uint8_t table_id;
+			uint16_t data_length;
+
 			ControlMessages(int nPayloadDataLen) : payload_data_len(nPayloadDataLen) {
 			}
 
@@ -2586,15 +2747,6 @@ namespace MMT
 							}
 							delete ptr_PAMsg;
 						}
-						else
-						{
-							UnimplementedMessage* pUnimplMsg = new UnimplementedMessage();
-							if (pUnimplMsg->Unpack(msg_bs) >= 0)
-							{
-								pUnimplMsg->Print(fp, indent + 4);
-							}
-							delete pUnimplMsg;
-						}
 					}
 				}
 
@@ -2611,6 +2763,59 @@ namespace MMT
 					if (payload.size() > 256)
 						fprintf(out, MMT_FIX_HEADER_FMT_STR "  ...\n", szIndent, "");
 				}
+			}
+			void ProcessM2(FILE* fp = nullptr, int indent = 0)
+			{
+				if (fragmentation_indicator == 0)
+				{
+					for (auto& v : messages)
+					{
+						auto& msg_payload = std::get<1>(v);
+						CBitstream msg_bs(&msg_payload[0], msg_payload.size() << 3);
+						uint16_t peek_msg_id = (uint16_t)msg_bs.PeekBits(16);
+						if (peek_msg_id == 0x8000)// M2 section message, not including M2 short section message
+						{
+							M2Message* ptr_M2Msg = new M2Message((uint32_t)msg_payload.size());
+							if (ptr_M2Msg->Unpack(msg_bs) >= 0)
+							{
+								table_id=ptr_M2Msg->table_id;
+								if (table_id == 0x82)
+								{
+									data_length = ptr_M2Msg->data_length;
+									signaling_data_byte = new uint8_t[(int)data_length];
+									signaling_data_byte=ptr_M2Msg->getECM();
+								}
+ 								ptr_M2Msg->Print(fp, indent + 4);
+							}
+							delete ptr_M2Msg;
+
+						}
+						else if (peek_msg_id == 0x8001)//CA message
+						{
+							CAMessage* ptr_CAMsg = new CAMessage((uint32_t)msg_payload.size());
+							if (ptr_CAMsg->Unpack(msg_bs) >= 0)
+							{
+								ptr_CAMsg->Print(fp, indent + 4);
+							}
+							delete ptr_CAMsg;
+
+						}
+						else
+						{
+							UnimplementedMessage* pUnimplMsg = new UnimplementedMessage();
+							if (pUnimplMsg->Unpack(msg_bs) >= 0)
+							{
+								pUnimplMsg->Print(fp, indent + 4);
+							}
+							delete pUnimplMsg;
+						}
+					}
+				
+				}
+			}
+			uint8_t* getECM()
+			{
+				return signaling_data_byte;
 			}
 
 		};
@@ -2637,6 +2842,18 @@ namespace MMT
 		uint16_t			Extension_header_length;
 
 		int32_t				packet_data_len;
+
+		wchar_t LOGM2_FILENAME[128] = L"Extension_header_MMTPPacket.mmt";
+		FILE* flogM;
+		uint8_t hdr_ext_end_flag;
+		uint8_t hdr_ext_type;
+		uint16_t hdr_ext_length;
+		uint16_t hdr_ext_count;
+
+		union
+		{
+			uint8_t* hdr_ext_byte;
+		}PACKED;
 
 		union
 		{
@@ -2722,14 +2939,37 @@ namespace MMT
 
 				// TODO for other cases
 				Extension_header_field = new uint8_t[Extension_header_length];
-				if (bs.Read(Extension_header_field, Extension_header_length) < (int)Extension_header_length)
+				if (bs.Peek(Extension_header_field, Extension_header_length) < (int)Extension_header_length)//if (bs.Read(Extension_header_field, Extension_header_length) < (int)Extension_header_length)
 				{
 					delete[] Extension_header_field;
 					Extension_header_field = nullptr;
 					return RET_CODE_BOX_TOO_SMALL;
 				}
 
-				left_bits -= (uint64_t)Extension_header_length << 3;
+				//left_bits -= (uint64_t)Extension_header_length << 3;
+				//extract Extension_header_field
+				hdr_ext_count = 0;//count bits
+				flogM = _wfopen(LOGM2_FILENAME, L"ab");
+				while (hdr_ext_count < (uint64_t)Extension_header_length << 3)
+				{
+					hdr_ext_end_flag = (uint8_t)bs.GetBits(1);
+					hdr_ext_type = (uint8_t)bs.GetBits(15);
+					left_bits -= 16;
+					hdr_ext_count += 16;
+					hdr_ext_length = bs.GetWord();
+					left_bits -= (2ULL << 3);
+					hdr_ext_count += (2ULL << 3);
+					hdr_ext_byte = new uint8_t[hdr_ext_length];
+					bs.Read(hdr_ext_byte, hdr_ext_length);
+					if (hdr_ext_type == 0x001)//P.42 in  6-STD-B60v1_13-E1.pdf
+					{
+						fwrite(hdr_ext_byte, 1, hdr_ext_length, flogM);//hdr_ext_byte represents odd/even key
+					}
+					delete[] hdr_ext_byte;
+					left_bits -= (uint64_t)hdr_ext_length << 3;
+					hdr_ext_count += (uint64_t)hdr_ext_length << 3;
+				}
+				fclose(flogM);
 			}
 
 			uint64_t cur_bit_pos = bs.Tell();
