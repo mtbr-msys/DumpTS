@@ -125,6 +125,9 @@
     <ClCompile Include="..\..\src\StdAfx.cpp">
       <Filter>src\Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\b_cas_card.c">
+      <Filter>src\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\AIFF.h">
@@ -216,6 +219,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\LibPlatform\wtypes.h">
       <Filter>src\Header Files\LibPlatform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\b_cas_card.h">
+      <Filter>src\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\b_cas_card_error_code.h">
+      <Filter>src\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\portable.h">
+      <Filter>src\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

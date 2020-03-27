@@ -20,30 +20,30 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BF77391C-3A97-460E-B1F1-3741C5B3DB78}</ProjectGuid>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -101,7 +101,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
@@ -120,6 +120,7 @@
       <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -253,6 +254,7 @@
     <ClCompile Include="..\..\src\AMRingBuffer.cpp" />
     <ClCompile Include="..\..\src\AudChMap.cpp" />
     <ClCompile Include="..\..\src\Bitstream.cpp" />
+    <ClCompile Include="..\..\src\b_cas_card.c" />
     <ClCompile Include="..\..\src\combase.cpp" />
     <ClCompile Include="..\..\src\crc.cpp" />
     <ClCompile Include="..\..\src\DumpMKV.cpp" />
@@ -280,6 +282,8 @@
     <ClInclude Include="..\..\src\AudChMap.h" />
     <ClInclude Include="..\..\src\av1.h" />
     <ClInclude Include="..\..\src\Bitstream.h" />
+    <ClInclude Include="..\..\src\b_cas_card.h" />
+    <ClInclude Include="..\..\src\b_cas_card_error_code.h" />
     <ClInclude Include="..\..\src\CodecID.h" />
     <ClInclude Include="..\..\src\combase.h" />
     <ClInclude Include="..\..\src\crc.h" />
@@ -348,6 +352,7 @@
     <ClInclude Include="..\..\src\Matroska.h" />
     <ClInclude Include="..\..\src\MMT.h" />
     <ClInclude Include="..\..\src\PayloadBuf.h" />
+    <ClInclude Include="..\..\src\portable.h" />
     <ClInclude Include="..\..\src\QTFF.h" />
     <ClInclude Include="..\..\src\StdAfx.h" />
   </ItemGroup>
