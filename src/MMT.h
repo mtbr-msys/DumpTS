@@ -2198,7 +2198,7 @@ namespace MMT
 				uint8_t last_section_number = bs.GetByte();
 
 				left_bits -= 40ULL;
-				data_length = section_length - 5;				
+				data_length = section_length - 5 -4; //-4 for section CRC				
 				signaling_data_byte = new uint8_t[(int)data_length];
 
 				for (int i = 0; i < data_length; i++)
@@ -2207,9 +2207,9 @@ namespace MMT
 					left_bits -= 8ULL;
 				}
 				
-				//CRC data not included in Unpack(CBitstream& bs)
-				//uint32_t CRC_32 = bs.GetDWord(); 
-				//left_bits -= 32ULL;
+				//CRC data included in Unpack(CBitstream& bs)
+				uint32_t CRC_32 = bs.GetDWord(); 
+				left_bits -= 32ULL;
 			}
 			else//M2 short section message
 			{

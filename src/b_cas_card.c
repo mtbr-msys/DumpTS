@@ -65,11 +65,11 @@ static const uint8_t EMM_RECEIVE_CMD_HEADER[] = {
 };
 
 static const uint8_t CARD_SCRAMBLEKEY_SET_CMD[] = {
-	0x90, 0xA0, 0x00, 0x01, 0x0F,
+	0x90, 0xA0, 0x00, 0x01, 0x10,
 };
 
 static const uint8_t CARD_SCRAMBLEKEY_PUB_KEY[] = {
-	0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF
+	0x00, 0x00, 0x00, 0x0c, 0x01, 0x00, 0x6c, 0x50, 0xD9, 0x25, 0xd8, 0x82, 0x17, 0x67, 0x41, 0x49,
 };
 
 #define B_CAS_BUFFER_MAX (4*1024)
@@ -327,10 +327,10 @@ static int scramble_key_cas_card(void* bcas, B_CAS_ID* casid, CARD_SCRAMBLEKEY* 
 		memcpy(prv->sbuf + 0, CARD_SCRAMBLEKEY_SET_CMD, r);
 		//prv->sbuf[r] = (uint8_t)16;
 		//r += 1;
-		memcpy(prv->sbuf + r, casbuf, 8);//8byte
-		r += 8;
-		memcpy(prv->sbuf + r, CARD_SCRAMBLEKEY_PUB_KEY, 8);//8byte
-		r += 8;
+		//memcpy(prv->sbuf + r, casbuf, 8);//8byte
+		//r += 8;
+		memcpy(prv->sbuf + r, CARD_SCRAMBLEKEY_PUB_KEY, 16);//8byte
+		r += 16;
 		prv->sbuf[r] = 0;
 		r += 1;
 
@@ -763,7 +763,6 @@ static int setup_ecm_receive_command(uint8_t *dst, uint8_t *src, int len)
 	r += len;
 	dst[r] = 0;
 	r += 1;
-
 	return r;
 }
 
